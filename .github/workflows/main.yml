@@ -19,7 +19,7 @@ jobs:
       with:
         path: ./
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
-        name: artifact
-        files: [ ./dist/windows/main.exe ]
+        name: Application
+        path: ./dist/windows/main.exe
