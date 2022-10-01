@@ -1,4 +1,5 @@
 import sys
+import os
 import re
 
 class TextProcessing:
@@ -7,15 +8,24 @@ class TextProcessing:
         self.en_list: list[str] = []
         self.ua_list: list[str] = []
         self.regex = re.compile(r"\"(?:\\\")?\s?(.*?)(?:\\\")?\"")
+        self.file = ''
     
     def read(self, file: str = ''):
-        self.file = file
-        if self.file != '':
-            with open(self.file, 'r', encoding='UTF-8') as f:
-                text_list = f.readlines()
+        text_list = []
+        if os.path.exists(file) and file != '':
+            with open(file, 'r', encoding='UTF-8') as f:
+                    text_list = f.readlines()
+                    file_correct = False
+                    for line in text_list:
+                        if line[1:3] == 'EN':
+                            file_correct = True
+                            break
+                    if file_correct == False:   
+                        raise Exception("Wrong file format!")
+                    self.file = file
         else:
-            text_list = []
-        
+            self.file = ''
+            
         for line in text_list:
             match line[1:3]:
                 case "JP":
@@ -53,3 +63,4 @@ if __name__ == '__main__':
         print(tp.update_ua("ЦЕ ПЕРЕКЛАД ЦЕ ПЕРЕКЛАД ЦЕ ПЕРЕКЛАД", -1))
     except Exception as e:
         print(e)
+

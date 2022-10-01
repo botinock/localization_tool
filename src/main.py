@@ -4,7 +4,8 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction, QFont, QIcon
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QLineEdit, QLabel, QPushButton, QMenuBar, QFileDialog
 from PyQt6.QtWidgets import QListWidget
-from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout
+from PyQt6.QtWidgets import QVBoxLayout, QGridLayout
+from PyQt6.QtWidgets import QErrorMessage
 import qdarktheme
 
 from text_processing import TextProcessing
@@ -13,6 +14,8 @@ class MainWindow(QMainWindow):
     def __init__(self, file):
         super().__init__()
         self.setWindowTitle("Localization Tool")
+        self.setAcceptDrops(True)
+
         menu = QMenuBar()
         file_button = menu.addAction("File")
         menu.addAction("Font")
@@ -29,8 +32,9 @@ class MainWindow(QMainWindow):
 
 
         self.plain_text_list = QListWidget()
-
-        self.file_opened(file)
+        self.tp = TextProcessing()
+        if file != '':
+            self.file_opened(file)
 
         self.jp_line = QLineEdit()
         self.en_line = QLineEdit()
@@ -43,10 +47,6 @@ class MainWindow(QMainWindow):
         jp_flag = QLabel('🇯🇵')
         en_flag = QLabel('🇬🇧')
         ua_flag = QLabel('🇺🇦')
-
-        jp_layout = QHBoxLayout()
-        en_layout = QHBoxLayout()
-        ua_layout = QHBoxLayout()
         
         self.back_button = QPushButton("Back")
         self.save_button = QPushButton("Save")
@@ -78,6 +78,16 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         widget.setLayout(v_layout)
         self.setCentralWidget(widget)
+
+    def dragEnterEvent(self, e):
+        if e.mimeData().text()[:4] == 'file' and e.mimeData().text()[-4:] == '.txt':
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+        file = e.mimeData().text()[8:]        
+        self.file_opened(file)
 
     def list_item_activated(self, row_idx: int):
         self.jp_line.setText(self.tp.parse_string(self.tp.jp_list[row_idx]))
@@ -112,10 +122,14 @@ class MainWindow(QMainWindow):
         self.file_opened(file[0])
 
     def file_opened(self, file):
-        self.tp = TextProcessing()
-        text = self.tp.read(file)
-        self.plain_text_list.addItems([''.join(line).strip('\n') for line in text])
-        self.plain_text_list.currentRowChanged.connect(self.list_item_activated)
+        try:
+            text = self.tp.read(file)
+            self.plain_text_list.addItems([''.join(line).strip('\n') for line in text])
+            self.plain_text_list.currentRowChanged.connect(self.list_item_activated)
+        except Exception as e:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage(e.__str__())
+            error_dialog.exec()
 
     def night_mode_clicked(self):
         if self.is_dark:
