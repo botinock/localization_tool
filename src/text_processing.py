@@ -9,8 +9,9 @@ class TextProcessing:
         self.regex = re.compile(r"\"(?:\\\")?\s?(.*?)(?:\\\")?\"")
     
     def read(self, file: str = ''):
-        if file != '':
-            with open(file, 'r', encoding='UTF-8') as f:
+        self.file = file
+        if self.file != '':
+            with open(self.file, 'r', encoding='UTF-8') as f:
                 text_list = f.readlines()
         else:
             text_list = []
@@ -25,8 +26,14 @@ class TextProcessing:
                     self.ua_list.append(line)
         return self.make_text()
 
+    def save(self):
+        if self.file != '':
+            with open(self.file, 'w', encoding='UTF-8') as f:
+                f.write(''.join([''.join(line) for line in self.text]))
+
     def make_text(self):
         self.text = list(zip(self.jp_list, self.en_list, self.ua_list))
+        self.save()
         return self.text
 
     def update_ua(self, line: str, idx: int):
