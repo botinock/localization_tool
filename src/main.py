@@ -92,12 +92,13 @@ class MainWindow(QMainWindow):
             self.plain_text_list.setCurrentRow(self.plain_text_list.currentRow() - 1)
 
     def save(self):
-        self.tp.update_ua(
-            self.ua_line.text(),
-            self.plain_text_list.currentRow()
-        )
-        item = self.plain_text_list.currentItem()
-        item.setText(''.join(self.tp.text[self.plain_text_list.currentRow()]).strip('\n'))
+        if self.tp.file != '':
+            self.tp.update_ua(
+                self.ua_line.text(),
+                self.plain_text_list.currentRow()
+            )
+            item = self.plain_text_list.currentItem()
+            item.setText(''.join(self.tp.text[self.plain_text_list.currentRow()]).strip('\n'))
 
 
 if __name__ == '__main__':
