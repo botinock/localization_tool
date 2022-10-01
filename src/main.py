@@ -1,8 +1,8 @@
-import sys
+import sys, os
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction, QFont, QIcon
-from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QLineEdit, QLabel, QPushButton, QMenuBar
+from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QLineEdit, QLabel, QPushButton, QMenuBar, QFileDialog
 from PyQt6.QtWidgets import QListWidget
 from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout
 
@@ -13,23 +13,26 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Localization Tool")
         menu = QMenuBar()
-        menu.addAction("File")
+        file_button = menu.addAction("File")
         menu.addAction("Font")
         menu.addAction("Night Mode")
         self.setMenuBar(menu)
+
+        file_button.triggered.connect(self.file_clicked)
 
         layout = QVBoxLayout()
 
         self.plain_text_list = QListWidget()
 
-        self.tp = TextProcessing()
-        text = self.tp.read(file)
-        self.plain_text_list.addItems([''.join(line).strip('\n') for line in text])
-        self.plain_text_list.currentRowChanged.connect(self.list_item_activated)
+        self.file_opened(file)
 
-        self.jp_line = QLineEdit("……もう怒らないで聞いてくれますよね？」")
-        self.en_line = QLineEdit("...You'll listen without getting angry this time, right?")
-        self.ua_line = QLineEdit("...Тепер послухай будь ласка спокійно, добре?")
+        self.jp_line = QLineEdit()
+        self.en_line = QLineEdit()
+        self.ua_line = QLineEdit()
+
+        self.jp_line.setPlaceholderText("日本語のテキストはここにある")
+        self.en_line.setPlaceholderText("English text is here")
+        self.ua_line.setPlaceholderText("Український текст тут")
 
         jp_flag = QLabel('🇯🇵')
         en_flag = QLabel('🇬🇧')
@@ -99,6 +102,16 @@ class MainWindow(QMainWindow):
             )
             item = self.plain_text_list.currentItem()
             item.setText(''.join(self.tp.text[self.plain_text_list.currentRow()]).strip('\n'))
+
+    def file_clicked(self):
+        file = QFileDialog.getOpenFileName(self, 'Open file', os.getcwd(), 'Text files (*READABLE.txt)')
+        self.file_opened(file[0])
+
+    def file_opened(self, file):
+        self.tp = TextProcessing()
+        text = self.tp.read(file)
+        self.plain_text_list.addItems([''.join(line).strip('\n') for line in text])
+        self.plain_text_list.currentRowChanged.connect(self.list_item_activated)
 
 
 if __name__ == '__main__':

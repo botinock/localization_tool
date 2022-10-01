@@ -4,7 +4,6 @@
 [JP:2]"　梨花ちゃんに洗いざらいの全てを話した。"
 [EN:2]"I told Rika-chan anything and everything."
 [UA:2]"I told Rika-chan anything and everything."
-
 [JP]"詩音"
 [EN]"Shion"
 [UA]"Shion"
@@ -14,4 +13,3 @@
 [JP:4]"……もう怒らないで聞いてくれますよね？」"
 [EN:4]" ...You'll listen without getting angry this time, right?\""
 [UA:4]" ...You'll listen without getting angry this time, right?\""
-
