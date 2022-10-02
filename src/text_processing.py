@@ -52,7 +52,7 @@ class TextProcessing:
         return self.make_text()
 
     def parse_string(self, line: str) -> str:
-        return self.regex.search(line).group(1)
+        return self.regex.search(line).group(1).strip('\n')
         
 
 if __name__ == '__main__':

@@ -1,14 +1,15 @@
 import sys, os
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QFont, QIcon
-from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QLineEdit, QLabel, QPushButton, QMenuBar, QFileDialog
+from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, QEvent
+from PyQt6.QtGui import QAction, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat, QFontMetrics, QColor
+from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QLineEdit, QTextEdit, QLabel, QPushButton, QMenuBar, QFileDialog
 from PyQt6.QtWidgets import QListWidget
 from PyQt6.QtWidgets import QVBoxLayout, QGridLayout
 from PyQt6.QtWidgets import QErrorMessage
 import qdarktheme
 
 from text_processing import TextProcessing
+from spellcheck import SpellChecker
 
 class MainWindow(QMainWindow):
     def __init__(self, file):
@@ -30,7 +31,6 @@ class MainWindow(QMainWindow):
         v_layout = QVBoxLayout()
         grid_layout = QGridLayout()
 
-
         self.plain_text_list = QListWidget()
         self.tp = TextProcessing()
         if file != '':
@@ -38,7 +38,10 @@ class MainWindow(QMainWindow):
 
         self.jp_line = QLineEdit()
         self.en_line = QLineEdit()
-        self.ua_line = QLineEdit()
+        self.ua_line = QLineTextEdit()
+
+        self.spch = SpellCheckHighlighter(self.ua_line.document())
+        self.spch_init()
 
         self.jp_line.setPlaceholderText("日本語のテキストはここにある")
         self.en_line.setPlaceholderText("English text is here")
@@ -55,7 +58,8 @@ class MainWindow(QMainWindow):
         self.back_button.clicked.connect(self.back_clicked)
         self.save_button.clicked.connect(self.save)
         self.next_button.clicked.connect(self.next_clicked)
-        self.ua_line.returnPressed.connect(self.next_clicked)
+        self.ua_line.installEventFilter(self)
+        # self.ua_line.returnPressed.connect(self.next_clicked)
 
         grid_layout.addWidget(jp_flag, 0, 0)
         grid_layout.addWidget(self.jp_line, 0, 1)
@@ -111,7 +115,7 @@ class MainWindow(QMainWindow):
     def save(self):
         if self.tp.file != '':
             self.tp.update_ua(
-                self.ua_line.text(),
+                self.ua_line.document().toRawText(),
                 self.plain_text_list.currentRow()
             )
             item = self.plain_text_list.currentItem()
@@ -135,11 +139,83 @@ class MainWindow(QMainWindow):
         if self.is_dark:
             QApplication.instance().setStyleSheet(self.light_style_sheet)
             self.is_dark = False
+            self.ua_line.set_one_row_style()
+            self.spch.misspelledFormat.setUnderlineColor(Qt.GlobalColor.red)
         else:
             stylesheet = qdarktheme.load_stylesheet('dark')
             QApplication.instance().setStyleSheet(stylesheet)
             self.is_dark = True
+            self.ua_line.set_one_row_style()
+            self.spch.misspelledFormat.setUnderlineColor(Qt.GlobalColor.white)
 
+    def spch_init(self):
+        self.spch_thread = QThread()
+        self.spch_worker = Worker()
+        self.spch_worker.moveToThread(self.spch_thread)
+        self.spch_thread.started.connect(self.spch_worker.create_spch)
+        self.spch_worker.spch_is_ready_signal.connect(self.spch_is_ready)
+        self.spch_worker.spch_is_ready_signal.connect(self.spch_thread.quit)
+        self.spch_worker.spch_is_ready_signal.connect(self.spch_worker.deleteLater)
+        self.spch_thread.finished.connect(self.spch_thread.deleteLater)
+        self.spch_thread.start()
+
+    def spch_is_ready(self, spch: SpellChecker):
+        self.spch.setSpeller(spch)
+    
+    def eventFilter(self, obj, event: QEvent):
+        if event.type() == QEvent.Type.KeyPress and obj is self.ua_line:
+            if event.key() == Qt.Key.Key_Return and self.ua_line.hasFocus():
+                self.next_clicked()
+        return super().eventFilter(obj, event)
+
+
+class Worker(QObject):
+    spch_is_ready_signal = pyqtSignal(SpellChecker)
+
+    def create_spch(self):
+        spch = SpellChecker()
+        self.spch_is_ready_signal.emit(spch)
+
+
+class SpellCheckHighlighter(QSyntaxHighlighter):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.misspelledFormat = QTextCharFormat()
+        self.misspelledFormat.setUnderlineStyle(QTextCharFormat.UnderlineStyle.SpellCheckUnderline)  # Platform and theme dependent
+        self.misspelledFormat.setUnderlineColor(Qt.GlobalColor.red)
+
+    def highlightBlock(self, text: str) -> None:
+        if not hasattr(self, "speller"):
+            return
+
+        for word_object in self.speller.regex.finditer(text):
+            if not self.speller.check_word(word_object.group()):
+                self.setFormat(
+                    word_object.start(),
+                    word_object.end() - word_object.start(),
+                    self.misspelledFormat,
+                )
+
+    def setSpeller(self, speller: SpellChecker):
+        self.speller = speller
+
+
+class QLineTextEdit(QTextEdit):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.set_one_row_style()
+
+    def set_one_row_style(self):
+        pdoc = self.document()
+        fm = QFontMetrics(pdoc.defaultFont())
+        margins = self.contentsMargins()
+        nHeight = fm.lineSpacing() + (pdoc.documentMargin() + self.frameWidth()) * 2 + margins.top() + margins.bottom()
+        self.setFixedHeight(int(nHeight))
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            return
+        super().keyPressEvent(event)
 
 
 if __name__ == '__main__':
