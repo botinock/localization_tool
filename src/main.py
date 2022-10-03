@@ -39,6 +39,8 @@ class MainWindow(QMainWindow):
         self.jp_line = QLineEdit()
         self.en_line = QLineEdit()
         self.ua_line = QLineTextEdit()
+        self.plain_text_list.currentRowChanged.connect(self.list_item_activated)
+        
 
         self.is_spellchecker = True
 
@@ -134,8 +136,9 @@ class MainWindow(QMainWindow):
     def file_opened(self, file):
         try:
             text = self.tp.read(file)
+            print(text)
+            self.plain_text_list.clear()
             self.plain_text_list.addItems([''.join(line).strip('\n') for line in text])
-            self.plain_text_list.currentRowChanged.connect(self.list_item_activated)
         except Exception as e:
             error_dialog = QErrorMessage()
             error_dialog.showMessage(e.__str__())

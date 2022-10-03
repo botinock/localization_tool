@@ -25,7 +25,9 @@ class TextProcessing:
                     self.file = file
         else:
             self.file = ''
-            
+        self.jp_list = []
+        self.en_list = []
+        self.ua_list = []
         for line in text_list:
             match line[1:3]:
                 case "JP":
@@ -43,6 +45,7 @@ class TextProcessing:
 
     def make_text(self):
         self.text = list(zip(self.jp_list, self.en_list, self.ua_list))
+        print(self.jp_list)
         self.save()
         return self.text
 
