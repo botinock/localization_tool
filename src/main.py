@@ -41,11 +41,6 @@ class MainWindow(QMainWindow):
         self.ua_line = QLineTextEdit()
 
         self.is_spellchecker = True
-        self.spch = SpellCheckHighlighter(self.ua_line.document())
-        try:
-            self.spch_init()
-        except:
-            self.is_spellchecker = False
 
         self.jp_line.setPlaceholderText("日本語のテキストはここにある")
         self.en_line.setPlaceholderText("English text is here")
@@ -87,6 +82,12 @@ class MainWindow(QMainWindow):
         widget.setLayout(v_layout)
         self.setCentralWidget(widget)
 
+        self.spch = SpellCheckHighlighter(self.ua_line.document())
+        try:
+            self.spch_init()
+        except:
+            self.is_spellchecker = False
+
     def dragEnterEvent(self, e):
         if e.mimeData().text()[:4] == 'file' and e.mimeData().text()[-4:] == '.txt':
             e.accept()
@@ -127,7 +128,8 @@ class MainWindow(QMainWindow):
 
     def file_clicked(self):
         file = QFileDialog.getOpenFileName(self, 'Open file', os.getcwd(), 'Text files (*READABLE.txt)')
-        self.file_opened(file[0])
+        if file[0] != '':
+            self.file_opened(file[0])
 
     def file_opened(self, file):
         try:
@@ -161,7 +163,7 @@ class MainWindow(QMainWindow):
         self.spch_worker.spch_is_ready_signal.connect(self.spch_thread.quit)
         self.spch_worker.spch_is_ready_signal.connect(self.spch_worker.deleteLater)
         self.spch_thread.finished.connect(self.spch_thread.deleteLater)
-        self.spch_thread.start()
+        self.spch_thread.start(QThread.Priority.LowestPriority)
 
     def spch_is_ready(self, spch: SpellChecker):
         if isinstance(spch, SpellChecker):
