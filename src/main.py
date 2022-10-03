@@ -40,8 +40,12 @@ class MainWindow(QMainWindow):
         self.en_line = QLineEdit()
         self.ua_line = QLineTextEdit()
 
+        self.is_spellchecker = True
         self.spch = SpellCheckHighlighter(self.ua_line.document())
-        self.spch_init()
+        try:
+            self.spch_init()
+        except:
+            self.is_spellchecker = False
 
         self.jp_line.setPlaceholderText("日本語のテキストはここにある")
         self.en_line.setPlaceholderText("English text is here")
@@ -160,7 +164,12 @@ class MainWindow(QMainWindow):
         self.spch_thread.start()
 
     def spch_is_ready(self, spch: SpellChecker):
-        self.spch.setSpeller(spch)
+        if isinstance(spch, SpellChecker):
+            self.spch.setSpeller(spch)
+        else:
+            error_dialog = QErrorMessage()
+            error_dialog.showMessage("SpellChecker is failed to load!")
+            error_dialog.exec()
     
     def eventFilter(self, obj, event: QEvent):
         if event.type() == QEvent.Type.KeyPress and obj is self.ua_line:
@@ -173,8 +182,13 @@ class Worker(QObject):
     spch_is_ready_signal = pyqtSignal(SpellChecker)
 
     def create_spch(self):
-        spch = SpellChecker()
-        self.spch_is_ready_signal.emit(spch)
+        try:
+            spch = SpellChecker()
+            self.spch_is_ready_signal.emit(spch)
+        except:
+            pass
+            # self.spch_is_ready_signal.emit(None)
+        
 
 
 class SpellCheckHighlighter(QSyntaxHighlighter):

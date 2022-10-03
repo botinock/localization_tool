@@ -7,11 +7,11 @@ from serializator import serialize_dict
 class SpellChecker:
     def __init__(self) -> None:
         try:
-            with open('../assets/dictionary', 'rb') as file:
+            with open('assets/dictionary', 'rb') as file:
                 self.dictionary: Dictionary = pickle.load(file) #Dictionary.from_files('../assets/uk_UA')
         except:
-            with open('../assets/dictionary', 'rb') as file:
-                self.dictionary: Dictionary = Dictionary.from_files('../assets/uk_UA')
+            with open('assets/dictionary', 'rb') as file:
+                self.dictionary: Dictionary = Dictionary.from_files('assets/uk_UA')
                 serialize_dict()
         self.regex = re.compile(r"([А-ЩЬЮЯҐЄІЇа-щьюяґєії'`’ʼ]+)")
 
