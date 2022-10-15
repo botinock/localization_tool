@@ -13,3 +13,6 @@
 [JP:4]"……もう怒らないで聞いてくれますよね？」"
 [EN:4]" ...You'll listen without getting angry this time, right?\""
 [UA:4]" ...You'll listen without getting angry this time, right?\""
+[JP:5]" お袋が起きてきた俺に気付き、電話の相手に、「起きてきました。代わりますね。」と告げる。"
+[EN:5]"\"He's awake, I'll put him on right now,\" my mother informed the person on the other end of the line."
+[UA:5]"\"Так, вже прокинувся, зараз підійде,\" - сказала мама комусь, хто дзвонив."

@@ -7,7 +7,7 @@ class TextProcessing:
         self.jp_list: list[str] = []
         self.en_list: list[str] = []
         self.ua_list: list[str] = []
-        self.regex = re.compile(r"\"(?:\\\")?\s?(.*?)(?:\\\")?\"")
+        self.regex = re.compile(r"\"\s?(.*)\"")
         self.file = ''
     
     def read(self, file: str = ''):
@@ -45,7 +45,6 @@ class TextProcessing:
 
     def make_text(self):
         self.text = list(zip(self.jp_list, self.en_list, self.ua_list))
-        print(self.jp_list)
         self.save()
         return self.text
 

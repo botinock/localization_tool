@@ -136,7 +136,6 @@ class MainWindow(QMainWindow):
     def file_opened(self, file):
         try:
             text = self.tp.read(file)
-            print(text)
             self.plain_text_list.clear()
             self.plain_text_list.addItems([''.join(line).strip('\n') for line in text])
         except Exception as e:
