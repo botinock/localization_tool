@@ -2,7 +2,7 @@ import sys, os
 
 from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, QEvent
 from PyQt6.QtGui import QAction, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat, QFontMetrics, QColor
-from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QLineEdit, QTextEdit, QLabel, QPushButton, QMenuBar, QFileDialog
+from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QCheckBox, QToolBar, QLineEdit, QTextEdit, QLabel, QPushButton, QMenuBar, QFileDialog
 from PyQt6.QtWidgets import QListWidget
 from PyQt6.QtWidgets import QVBoxLayout, QGridLayout
 from PyQt6.QtWidgets import QErrorMessage
@@ -60,7 +60,6 @@ class MainWindow(QMainWindow):
         self.save_button.clicked.connect(self.save)
         self.next_button.clicked.connect(self.next_clicked)
         self.ua_line.installEventFilter(self)
-        # self.ua_line.returnPressed.connect(self.next_clicked)
 
         grid_layout.addWidget(jp_flag, 0, 0)
         grid_layout.addWidget(self.jp_line, 0, 1)
@@ -83,6 +82,18 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         widget.setLayout(v_layout)
         self.setCentralWidget(widget)
+
+        self.jp_checkbox = QCheckBox("🇯🇵")
+        self.en_checkbox = QCheckBox("🇬🇧")
+        self.jp_checkbox.setChecked(True)
+        self.en_checkbox.setChecked(True)
+        self.jp_checkbox.toggled.connect(self.jp_toggled)
+        self.en_checkbox.toggled.connect(self.en_toggled)
+
+        toolbar = QToolBar("Toggle languages")
+        toolbar.addWidget(self.jp_checkbox)
+        toolbar.addWidget(self.en_checkbox)
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
 
         self.spch = SpellCheckHighlighter(self.ua_line.document())
         try:
@@ -181,6 +192,21 @@ class MainWindow(QMainWindow):
                 self.next_clicked()
         return super().eventFilter(obj, event)
 
+    def jp_toggled(self):
+        self.tp.display_jp = self.jp_checkbox.isChecked()
+        self.update_plain_list()
+
+    def en_toggled(self):
+        self.tp.display_en = self.en_checkbox.isChecked()
+        self.update_plain_list()
+        
+    
+    def update_plain_list(self):
+        current_row = self.plain_text_list.currentRow()
+        self.plain_text_list.clear()
+        self.plain_text_list.addItems([''.join(line).strip('\n') for line in self.tp.make_text()])
+        self.plain_text_list.setCurrentRow(current_row)
+
 
 class Worker(QObject):
     spch_is_ready_signal = pyqtSignal(SpellChecker)
@@ -193,7 +219,6 @@ class Worker(QObject):
             pass
             # self.spch_is_ready_signal.emit(None)
         
-
 
 class SpellCheckHighlighter(QSyntaxHighlighter):
     def __init__(self, *args, **kwargs) -> None:

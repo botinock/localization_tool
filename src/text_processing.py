@@ -9,6 +9,9 @@ class TextProcessing:
         self.ua_list: list[str] = []
         self.regex = re.compile(r"\"\s?(.*)\"")
         self.file = ''
+
+        self.display_jp = True
+        self.display_en = True
     
     def read(self, file: str = ''):
         text_list = []
@@ -41,10 +44,17 @@ class TextProcessing:
     def save(self):
         if self.file != '':
             with open(self.file, 'w', encoding='UTF-8') as f:
-                f.write(''.join([''.join(line) for line in self.text]))
+                f.write(''.join([''.join(line) for line in self.text_save]))
 
     def make_text(self):
-        self.text = list(zip(self.jp_list, self.en_list, self.ua_list))
+        lang_list = []
+        if self.display_jp:
+            lang_list.append(self.jp_list)
+        if self.display_en:
+            lang_list.append(self.en_list)
+        lang_list.append(self.ua_list)
+        self.text = list(zip(*lang_list))
+        self.text_save = list(zip(self.jp_list, self.en_list, self.ua_list))
         self.save()
         return self.text
 
