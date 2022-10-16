@@ -1,8 +1,9 @@
 import sys, os
 
-from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, QEvent
+from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, QEvent, QSettings, QPoint, QSize
 from PyQt6.QtGui import QAction, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat, QFontMetrics, QColor
-from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QCheckBox, QToolBar, QLineEdit, QTextEdit, QLabel, QPushButton, QMenuBar, QFileDialog
+from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QCheckBox, QToolBar, QLineEdit
+from PyQt6.QtWidgets import QTextEdit, QLabel, QPushButton, QMenuBar, QFileDialog, QFontDialog
 from PyQt6.QtWidgets import QListWidget
 from PyQt6.QtWidgets import QVBoxLayout, QGridLayout
 from PyQt6.QtWidgets import QErrorMessage
@@ -15,17 +16,24 @@ class MainWindow(QMainWindow):
     def __init__(self, file):
         super().__init__()
         self.setWindowTitle("Localization Tool")
+        self.settings = QSettings('Onigafuchi', 'localization_tool')
+
+        # Initial window size/pos last saved. Use default values for first time
+        self.resize(self.settings.value("size", QSize(270, 225)))
+        self.move(self.settings.value("pos", QPoint(50, 50)))
+
         self.setAcceptDrops(True)
 
         menu = QMenuBar()
         file_button = menu.addAction("File")
-        menu.addAction("Font")
+        font_button = menu.addAction("Font")
         night_button = menu.addAction("Night Mode")
         self.setMenuBar(menu)
 
         file_button.triggered.connect(self.file_clicked)
+        font_button.triggered.connect(self.openFontDialog)
         self.light_style_sheet = QApplication.instance().styleSheet()
-        self.is_dark = False
+        self.is_dark = self.settings.value('dark_mode', 'false') == 'false'
         night_button.triggered.connect(self.night_mode_clicked)
 
         v_layout = QVBoxLayout()
@@ -33,20 +41,22 @@ class MainWindow(QMainWindow):
 
         self.plain_text_list = QListWidget()
         self.tp = TextProcessing()
-        if file != '':
-            self.file_opened(file)
 
         self.jp_line = QLineEdit()
         self.en_line = QLineEdit()
         self.ua_line = QLineTextEdit()
         self.plain_text_list.currentRowChanged.connect(self.list_item_activated)
         
-
         self.is_spellchecker = True
 
         self.jp_line.setPlaceholderText("日本語のテキストはここにある")
         self.en_line.setPlaceholderText("English text is here")
         self.ua_line.setPlaceholderText("Український текст тут")
+
+        file = self.settings.value("file", file)
+        self.file_opened(file)
+        self.cur_font = self.settings.value('font', self.ua_line.font())
+        self.update_font(self.cur_font)
 
         jp_flag = QLabel('🇯🇵')
         en_flag = QLabel('🇬🇧')
@@ -85,8 +95,8 @@ class MainWindow(QMainWindow):
 
         self.jp_checkbox = QCheckBox("🇯🇵")
         self.en_checkbox = QCheckBox("🇬🇧")
-        self.jp_checkbox.setChecked(True)
-        self.en_checkbox.setChecked(True)
+        self.jp_checkbox.setChecked(self.settings.value('jp_checked', 'true') == 'true')
+        self.en_checkbox.setChecked(self.settings.value('en_checked', 'true') == 'true')
         self.jp_checkbox.toggled.connect(self.jp_toggled)
         self.en_checkbox.toggled.connect(self.en_toggled)
 
@@ -96,10 +106,15 @@ class MainWindow(QMainWindow):
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, toolbar)
 
         self.spch = SpellCheckHighlighter(self.ua_line.document())
+        self.night_mode_clicked()
+        self.jp_toggled()
+        self.en_toggled()
+
         try:
             self.spch_init()
         except:
             self.is_spellchecker = False
+        
 
     def dragEnterEvent(self, e):
         if e.mimeData().text()[:4] == 'file' and e.mimeData().text()[-4:] == '.txt':
@@ -108,7 +123,7 @@ class MainWindow(QMainWindow):
             e.ignore()
 
     def dropEvent(self, e):
-        file = e.mimeData().text()[8:]        
+        file = e.mimeData().text()[8:]
         self.file_opened(file)
 
     def list_item_activated(self, row_idx: int):
@@ -118,14 +133,14 @@ class MainWindow(QMainWindow):
 
     def next_clicked(self):
         self.save()
-        if self.plain_text_list.currentRow() == self.plain_text_list.count() - 1:    
+        if self.plain_text_list.currentRow() == self.plain_text_list.count() - 1:
             self.plain_text_list.setCurrentRow(0)
         else:
             self.plain_text_list.setCurrentRow(self.plain_text_list.currentRow() + 1)
 
     def back_clicked(self):
         self.save()
-        if self.plain_text_list.currentRow() == 0:    
+        if self.plain_text_list.currentRow() == 0:
             self.plain_text_list.setCurrentRow(self.plain_text_list.count() - 1)
         else:
             self.plain_text_list.setCurrentRow(self.plain_text_list.currentRow() - 1)
@@ -149,6 +164,9 @@ class MainWindow(QMainWindow):
             text = self.tp.read(file)
             self.plain_text_list.clear()
             self.plain_text_list.addItems([''.join(line).strip('\n') for line in text])
+            cur_row = self.settings.value('cur_row', 0)
+            self.plain_text_list.setCurrentRow(cur_row)
+            self.list_item_activated(cur_row)
         except Exception as e:
             error_dialog = QErrorMessage()
             error_dialog.showMessage(e.__str__())
@@ -200,12 +218,34 @@ class MainWindow(QMainWindow):
         self.tp.display_en = self.en_checkbox.isChecked()
         self.update_plain_list()
         
-    
     def update_plain_list(self):
         current_row = self.plain_text_list.currentRow()
         self.plain_text_list.clear()
         self.plain_text_list.addItems([''.join(line).strip('\n') for line in self.tp.make_text()])
         self.plain_text_list.setCurrentRow(current_row)
+
+    def openFontDialog(self):
+        self.cur_font, ok = QFontDialog.getFont()
+        if ok:
+            self.update_font(self.cur_font)
+    
+    def update_font(self, font: QFont):
+        self.plain_text_list.setFont(font)
+        self.jp_line.setFont(font)
+        self.en_line.setFont(font)
+        self.ua_line.setFont(font)
+
+
+    def closeEvent(self, e):
+        self.settings.setValue('size', self.size())
+        self.settings.setValue('pos', self.pos())
+        self.settings.setValue('file', self.tp.file)
+        self.settings.setValue('cur_row', self.plain_text_list.currentRow())
+        self.settings.setValue('dark_mode', self.is_dark)
+        self.settings.setValue('jp_checked', self.jp_checkbox.isChecked())
+        self.settings.setValue('en_checked', self.en_checkbox.isChecked())
+        self.settings.setValue('font', self.cur_font)
+        e.accept()
 
 
 class Worker(QObject):
