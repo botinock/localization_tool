@@ -234,6 +234,7 @@ class MainWindow(QMainWindow):
         self.jp_line.setFont(font)
         self.en_line.setFont(font)
         self.ua_line.setFont(font)
+        self.ua_line.set_one_row_style()
 
 
     def closeEvent(self, e):
