@@ -16,6 +16,7 @@ class MainWindow(QMainWindow):
     def __init__(self, file):
         super().__init__()
         self.setWindowTitle("Localization Tool")
+        self.setWindowIcon(QIcon('assets/icon.ico'))
         self.settings = QSettings('Onigafuchi', 'localization_tool')
 
         # Initial window size/pos last saved. Use default values for first time
@@ -161,12 +162,14 @@ class MainWindow(QMainWindow):
 
     def file_opened(self, file):
         try:
+            set_row = self.tp.file == ''
             text = self.tp.read(file)
             self.plain_text_list.clear()
             self.plain_text_list.addItems([''.join(line).strip('\n') for line in text])
-            cur_row = self.settings.value('cur_row', 0)
-            self.plain_text_list.setCurrentRow(cur_row)
-            self.list_item_activated(cur_row)
+            if set_row:
+                cur_row = self.settings.value('cur_row', 0)
+                self.plain_text_list.setCurrentRow(cur_row)
+                self.list_item_activated(cur_row)
         except Exception as e:
             error_dialog = QErrorMessage()
             error_dialog.showMessage(e.__str__())
